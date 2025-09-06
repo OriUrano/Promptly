@@ -6,8 +6,10 @@
 	let lines = $state(/** @type {string[]} */ ([]));
 	let currentLineIndex = $state(0);
 	let scrambledWords = $state(/** @type {string[]} */ ([]));
+	let availableWords = $state(/** @type {string[]} */ ([]));
 	let allMonologueWords = $state(/** @type {string[]} */ ([]));
 	let userInput = $state('');
+	let selectedWords = $state(/** @type {string[]} */ ([]));
 	let showFeedback = $state(false);
 	let isCorrect = $state(false);
 
@@ -88,7 +90,9 @@
 		}
 
 		scrambledWords = allWords;
+		availableWords = [...allWords];
 
+		selectedWords = [];
 		userInput = '';
 		showFeedback = false;
 	}
@@ -117,6 +121,7 @@
 	function resetPractice() {
 		currentMode = 'input';
 		currentLineIndex = 0;
+		selectedWords = [];
 		userInput = '';
 		showFeedback = false;
 	}
@@ -133,6 +138,25 @@
 
 	function retryLine() {
 		generateScrambledWords();
+	}
+
+	function addWordToSubmission(/** @type {string} */ word) {
+		selectedWords = [...selectedWords, word];
+		availableWords = availableWords.filter(w => w !== word);
+		userInput = selectedWords.join(' ');
+	}
+
+	function removeWordFromSubmission(/** @type {number} */ index) {
+		const removedWord = selectedWords[index];
+		selectedWords = selectedWords.filter((_, i) => i !== index);
+		availableWords = [...availableWords, removedWord];
+		userInput = selectedWords.join(' ');
+	}
+
+	function clearSubmission() {
+		availableWords = [...scrambledWords];
+		selectedWords = [];
+		userInput = '';
 	}
 </script>
 
@@ -194,16 +218,11 @@
 				<div class="mb-6">
 					<h3 class="mb-3 text-lg font-medium text-gray-700">Available Words:</h3>
 					<div class="flex flex-wrap gap-2">
-						{#each scrambledWords as word}
+						{#each availableWords as word, wordIndex}
 							<button
-								onclick={() => {
-									if (userInput) {
-										userInput += ' ' + word;
-									} else {
-										userInput = word;
-									}
-								}}
-								class="rounded-md border border-gray-300 bg-gray-100 px-3 py-2 text-sm transition-colors hover:bg-indigo-100"
+								onclick={() => addWordToSubmission(word)}
+								class="word-card rounded-md border border-gray-300 bg-gray-100 px-3 py-2 text-sm transition-colors hover:bg-indigo-100"
+								data-word-index={wordIndex}
 							>
 								{word}
 							</button>
@@ -212,15 +231,23 @@
 				</div>
 
 				<div class="mb-4">
-					<label for="lineInput" class="mb-2 block text-sm font-medium text-gray-700">
-						Type the line:
-					</label>
-					<textarea
-						id="lineInput"
-						bind:value={userInput}
-						placeholder="Type the correct line here..."
-						class="h-20 w-full resize-none rounded-md border border-gray-300 p-3 focus:border-transparent focus:ring-2 focus:ring-indigo-500"
-					></textarea>
+					<h3 class="mb-2 text-sm font-medium text-gray-700">
+						Submission Line:
+					</h3>
+					<div class="submission-line min-h-[5rem] w-full rounded-md border border-gray-300 p-3 bg-gray-50 flex flex-wrap items-start gap-2">
+						{#if selectedWords.length === 0}
+							<span class="text-gray-500 italic">Click words above to build your line...</span>
+						{:else}
+							{#each selectedWords as word, index}
+								<button
+									onclick={() => removeWordFromSubmission(index)}
+									class="submission-word inline-block rounded-md bg-indigo-100 border border-indigo-200 px-2 py-1 text-sm font-medium text-indigo-800 hover:bg-indigo-200 transition-colors"
+								>
+									{word}
+								</button>
+							{/each}
+						{/if}
+					</div>
 				</div>
 
 				{#if showFeedback}
@@ -260,7 +287,7 @@
 							Submit Line
 						</button>
 						<button
-							onclick={() => (userInput = '')}
+							onclick={clearSubmission}
 							class="rounded-md bg-gray-500 px-6 py-3 font-medium text-white transition-colors hover:bg-gray-600"
 						>
 							Clear
@@ -299,3 +326,20 @@
 		{/if}
 	</div>
 </div>
+
+<style>
+	.submission-word {
+		animation: wordAppear 0.3s ease-out;
+	}
+
+	@keyframes wordAppear {
+		0% {
+			transform: scale(0.5) translateY(-10px);
+			opacity: 0;
+		}
+		100% {
+			transform: scale(1) translateY(0);
+			opacity: 1;
+		}
+	}
+</style>
