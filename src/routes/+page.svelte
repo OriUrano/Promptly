@@ -215,6 +215,13 @@
 					</div>
 				</div>
 
+				<div class="mb-4 rounded-md bg-gray-50 p-3 border border-gray-200">
+					<h3 class="mb-2 text-sm font-medium text-gray-700">Previous Line:</h3>
+					<p class="text-gray-600 italic">
+						{currentLineIndex === 0 ? 'First Line' : lines[currentLineIndex - 1]}
+					</p>
+				</div>
+
 				<div class="mb-6">
 					<h3 class="mb-3 text-lg font-medium text-gray-700">Available Words:</h3>
 					<div class="flex flex-wrap gap-2">
