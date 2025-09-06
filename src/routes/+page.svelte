@@ -13,6 +13,10 @@
 	let selectedWordIndices = $state(/** @type {Set<number>} */ (new Set()));
 	let showFeedback = $state(false);
 	let isCorrect = $state(false);
+	let practiceStartTime = $state(/** @type {Date | null} */ (null));
+	let practiceEndTime = $state(/** @type {Date | null} */ (null));
+	let firstTryResults = $state(/** @type {boolean[]} */ ([]));
+	let isFirstAttempt = $state(true);
 
 	// Load saved monologue from localStorage
 	onMount(() => {
@@ -36,6 +40,13 @@
 
 		currentLineIndex = 0;
 		currentMode = 'practice';
+		
+		// Start timing and initialize first-try tracking
+		practiceStartTime = new Date();
+		practiceEndTime = null;
+		firstTryResults = new Array(lines.length).fill(false);
+		isFirstAttempt = true;
+		
 		generateScrambledWords();
 	}
 
@@ -107,13 +118,21 @@
 		isCorrect = normalizedUser === normalizedCorrect;
 		showFeedback = true;
 
+		// Track first-try result
+		if (isFirstAttempt && isCorrect) {
+			firstTryResults[currentLineIndex] = true;
+		}
+		isFirstAttempt = false;
+
 		if (isCorrect) {
 			setTimeout(() => {
 				if (currentLineIndex < lines.length - 1) {
 					currentLineIndex++;
+					isFirstAttempt = true;
 					generateScrambledWords();
 				} else {
 					// Completed all lines
+					practiceEndTime = new Date();
 					currentMode = 'completed';
 				}
 			}, 1500);
@@ -132,9 +151,11 @@
 	function nextLine() {
 		if (currentLineIndex < lines.length - 1) {
 			currentLineIndex++;
+			isFirstAttempt = true;
 			generateScrambledWords();
 		} else {
 			// If it's the last line, complete the practice
+			practiceEndTime = new Date();
 			currentMode = 'completed';
 		}
 	}
@@ -168,6 +189,17 @@
 		selectedWords = [];
 		selectedWordIndices = new Set();
 		userInput = '';
+	}
+
+	function formatTime(/** @type {number} */ milliseconds) {
+		const seconds = Math.floor(milliseconds / 1000);
+		const minutes = Math.floor(seconds / 60);
+		const remainingSeconds = seconds % 60;
+		
+		if (minutes > 0) {
+			return `${minutes}m ${remainingSeconds}s`;
+		}
+		return `${remainingSeconds}s`;
 	}
 </script>
 
@@ -241,7 +273,7 @@
 							<button
 								onclick={() => addWordToSubmission(word, wordIndex)}
 								class="word-card rounded-md border px-3 py-2 text-sm transition-all duration-200 {isSelected 
-									? 'border-gray-400 bg-gray-600 cursor-default' 
+									? 'border-gray-400 bg-gray-300 cursor-default' 
 									: 'border-gray-300 bg-gray-100 hover:bg-indigo-100'}"
 								class:selected-word={isSelected}
 								disabled={isSelected}
@@ -327,11 +359,34 @@
 				<p class="mb-6 text-gray-600">
 					You've completed all {lines.length} lines of your monologue.
 				</p>
+				
+				{#if practiceStartTime && practiceEndTime}
+					{@const completionTime = practiceEndTime.getTime() - practiceStartTime.getTime()}
+					{@const firstTryCount = firstTryResults.filter(Boolean).length}
+					<div class="mb-6 rounded-md bg-gray-50 p-4 border border-gray-200">
+						<h3 class="mb-3 text-lg font-semibold text-gray-800">Practice Results</h3>
+						<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+							<div class="text-center">
+								<div class="text-2xl font-bold text-indigo-600">{formatTime(completionTime)}</div>
+								<div class="text-gray-600">Total Time</div>
+							</div>
+							<div class="text-center">
+								<div class="text-2xl font-bold text-green-600">{firstTryCount}/{lines.length}</div>
+								<div class="text-gray-600">Correct on First Try</div>
+							</div>
+						</div>
+					</div>
+				{/if}
+				
 				<div class="flex flex-col justify-center gap-3 sm:flex-row">
 					<button
 						onclick={() => {
 							currentLineIndex = 0;
 							currentMode = 'practice';
+							practiceStartTime = new Date();
+							practiceEndTime = null;
+							firstTryResults = new Array(lines.length).fill(false);
+							isFirstAttempt = true;
 							generateScrambledWords();
 						}}
 						class="rounded-md bg-indigo-600 px-6 py-3 font-medium text-white transition-colors hover:bg-indigo-700"
