@@ -10,6 +10,7 @@
 	let allMonologueWords = $state(/** @type {string[]} */ ([]));
 	let userInput = $state('');
 	let selectedWords = $state(/** @type {string[]} */ ([]));
+	let selectedWordIndices = $state(/** @type {Set<number>} */ (new Set()));
 	let showFeedback = $state(false);
 	let isCorrect = $state(false);
 
@@ -93,6 +94,7 @@
 		availableWords = [...allWords];
 
 		selectedWords = [];
+		selectedWordIndices = new Set();
 		userInput = '';
 		showFeedback = false;
 	}
@@ -122,6 +124,7 @@
 		currentMode = 'input';
 		currentLineIndex = 0;
 		selectedWords = [];
+		selectedWordIndices = new Set();
 		userInput = '';
 		showFeedback = false;
 	}
@@ -141,21 +144,29 @@
 	}
 
 	function addWordToSubmission(/** @type {string} */ word, /** @type {number} */ wordIndex) {
+		if (selectedWordIndices.has(wordIndex)) return; // Prevent double-selection
 		selectedWords = [...selectedWords, word];
-		availableWords = availableWords.filter((_, i) => i !== wordIndex);
+		selectedWordIndices = new Set([...selectedWordIndices, wordIndex]);
 		userInput = selectedWords.join(' ');
 	}
 
 	function removeWordFromSubmission(/** @type {number} */ index) {
 		const removedWord = selectedWords[index];
+		// Find the original word index in scrambledWords to remove from selected indices
+		const originalIndex = scrambledWords.findIndex((word, i) => 
+			word === removedWord && selectedWordIndices.has(i)
+		);
+		if (originalIndex !== -1) {
+			// Create new Set to trigger Svelte reactivity
+			selectedWordIndices = new Set([...selectedWordIndices].filter(i => i !== originalIndex));
+		}
 		selectedWords = selectedWords.filter((_, i) => i !== index);
-		availableWords = [...availableWords, removedWord];
 		userInput = selectedWords.join(' ');
 	}
 
 	function clearSubmission() {
-		availableWords = [...scrambledWords];
 		selectedWords = [];
+		selectedWordIndices = new Set();
 		userInput = '';
 	}
 </script>
@@ -225,13 +236,18 @@
 				<div class="mb-6">
 					<h3 class="mb-3 text-lg font-medium text-gray-700">Available Words:</h3>
 					<div class="flex flex-wrap gap-2">
-						{#each availableWords as word, wordIndex}
+						{#each scrambledWords as word, wordIndex}
+							{@const isSelected = selectedWordIndices.has(wordIndex)}
 							<button
 								onclick={() => addWordToSubmission(word, wordIndex)}
-								class="word-card rounded-md border border-gray-300 bg-gray-100 px-3 py-2 text-sm transition-colors hover:bg-indigo-100"
+								class="word-card rounded-md border px-3 py-2 text-sm transition-all duration-200 {isSelected 
+									? 'border-gray-400 bg-gray-600 cursor-default' 
+									: 'border-gray-300 bg-gray-100 hover:bg-indigo-100'}"
+								class:selected-word={isSelected}
+								disabled={isSelected}
 								data-word-index={wordIndex}
 							>
-								{word}
+								<span class="{isSelected ? 'invisible' : ''}">{word}</span>
 							</button>
 						{/each}
 					</div>
