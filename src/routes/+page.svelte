@@ -125,7 +125,14 @@
 		if (currentLineIndex < lines.length - 1) {
 			currentLineIndex++;
 			generateScrambledWords();
+		} else {
+			// If it's the last line, complete the practice
+			currentMode = 'completed';
 		}
+	}
+
+	function retryLine() {
+		generateScrambledWords();
 	}
 </script>
 
@@ -226,13 +233,21 @@
 							<p class="font-medium text-green-800">✓ Correct! Moving to next line...</p>
 						{:else}
 							<p class="mb-2 font-medium text-red-800">✗ Not quite right. The correct line is:</p>
-							<p class="text-gray-700 italic">"{lines[currentLineIndex]}"</p>
-							<button
-								onclick={nextLine}
-								class="mt-3 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
-							>
-								Continue to Next Line
-							</button>
+							<p class="mb-3 text-gray-700 italic">"{lines[currentLineIndex]}"</p>
+							<div class="flex flex-col gap-2 sm:flex-row">
+								<button
+									onclick={retryLine}
+									class="rounded-md bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700"
+								>
+									Try Again
+								</button>
+								<button
+									onclick={nextLine}
+									class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+								>
+									{currentLineIndex < lines.length - 1 ? 'Skip to Next Line' : 'Finish Practice'}
+								</button>
+							</div>
 						{/if}
 					</div>
 				{:else}
