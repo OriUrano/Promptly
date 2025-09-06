@@ -140,9 +140,9 @@
 		generateScrambledWords();
 	}
 
-	function addWordToSubmission(/** @type {string} */ word) {
+	function addWordToSubmission(/** @type {string} */ word, /** @type {number} */ wordIndex) {
 		selectedWords = [...selectedWords, word];
-		availableWords = availableWords.filter(w => w !== word);
+		availableWords = availableWords.filter((_, i) => i !== wordIndex);
 		userInput = selectedWords.join(' ');
 	}
 
@@ -227,7 +227,7 @@
 					<div class="flex flex-wrap gap-2">
 						{#each availableWords as word, wordIndex}
 							<button
-								onclick={() => addWordToSubmission(word)}
+								onclick={() => addWordToSubmission(word, wordIndex)}
 								class="word-card rounded-md border border-gray-300 bg-gray-100 px-3 py-2 text-sm transition-colors hover:bg-indigo-100"
 								data-word-index={wordIndex}
 							>
